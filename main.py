@@ -41,14 +41,7 @@ def main():
         help="Visualize the graph and algorithm results.",
     )
     parser.add_argument(
-        "--layout",
-        type=str,
-        default="spring",
-        choices=["spring", "circular", "kamada_kawai", "random", "shell"],
-        help="Layout for graph visualization.",
-    )
-    parser.add_argument(
-        "--with_labels", action="store_true", help="Display labels on nodes."
+        "--with-labels", action="store_true", help="Display labels on nodes."
     )
 
     args = parser.parse_args()
@@ -97,18 +90,16 @@ def main():
             highlight_nodes = k_core_nodes
             graph.visualize(
                 highlight_nodes=highlight_nodes,
-                layout=args.layout,
                 with_labels=args.with_labels,
             )
         elif args.algorithm == "densest_subgraph":
             graph.visualize(
                 highlight_nodes=exact_densest_nodes,
                 secondary_highlight_nodes=approx_densest_nodes,
-                layout=args.layout,
                 with_labels=args.with_labels,
             )
         else:
-            graph.visualize(layout=args.layout, with_labels=args.with_labels)
+            graph.visualize(with_labels=args.with_labels)
 
 
 if __name__ == "__main__":

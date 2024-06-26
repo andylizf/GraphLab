@@ -1,5 +1,7 @@
 import networkx as nx
 import plotly.graph_objects as go
+import re
+import numpy as np
 
 
 class Graph:
@@ -17,8 +19,10 @@ class Graph:
                     break
 
             for line in lines:
-                u, v = map(int, line.strip().split())
-                self.add_edge(u, v)
+                numbers = re.findall(r"\d+", line)
+                if len(numbers) >= 2:
+                    u, v = map(int, numbers[:2])
+                    self.add_edge(u, v)
 
     def save(self, output_path):
         with open(output_path, "w") as f:
@@ -205,23 +209,25 @@ class Graph:
         node_size=20,
         edge_color="gray",
         with_labels=True,
-        layout="spring",
     ):
-        # Determine the layout
-        if layout == "spring":
-            pos = nx.spring_layout(self.graph)
-        elif layout == "circular":
-            pos = nx.circular_layout(self.graph)
-        elif layout == "kamada_kawai":
-            pos = nx.kamada_kawai_layout(self.graph)
-        elif layout == "random":
-            pos = nx.random_layout(self.graph)
-        elif layout == "shell":
-            pos = nx.shell_layout(self.graph)
-        else:
-            pos = nx.spring_layout(self.graph)
+        pos = nx.spring_layout(self.graph, k=0.3, iterations=100)
 
-        # Edge coordinates
+        if highlight_nodes:
+            # Calculate the geometric center of the highlight nodes
+            center_x = np.mean([pos[node][0] for node in highlight_nodes])
+            center_y = np.mean([pos[node][1] for node in highlight_nodes])
+            center = np.array([center_x, center_y])
+
+            # Adjust highlight nodes to be closer to the center
+            contraction_factor = 0.5
+            for node in highlight_nodes:
+                pos[node] = center + contraction_factor * (pos[node] - center)
+
+            # Move non-highlight nodes away from the center
+            expansion_factor = 1.5
+            for node in set(self.graph.nodes()) - set(highlight_nodes):
+                pos[node] = center + expansion_factor * (pos[node] - center)
+
         edge_x, edge_y = [], []
         for edge in self.graph.edges():
             x0, y0 = pos[edge[0]]
@@ -237,7 +243,6 @@ class Graph:
             mode="lines",
         )
 
-        # Node coordinates
         node_x, node_y = zip(*pos.values())
         node_trace = go.Scatter(
             x=node_x,
@@ -287,3 +292,6 @@ class Graph:
                 textposition="top center" if with_labels else None,
             )
             fig.add_trace(secondary_highlight_trace)
+
+        # Show the plot in the browser
+        fig.show()
