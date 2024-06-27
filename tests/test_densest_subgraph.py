@@ -4,15 +4,6 @@ import unittest
 import subprocess
 from graphmaster.graph import Graph
 import networkx as nx
-import random
-
-
-def generate_random_graph(num_nodes, edge_prob) -> nx.Graph:
-    G = nx.erdos_renyi_graph(num_nodes, edge_prob)
-    for u, v in G.edges():
-        G.edges[u, v]["weight"] = random.uniform(0.1, 10.0)
-    return G
-
 
 def run_cpp_program(input_data, executable, cwd):
     result = subprocess.run(
@@ -65,30 +56,35 @@ class TestDensestSubgraph(unittest.TestCase):
             os.remove(executable_path)
 
     def setUp(self):
-        # Generate a random graph for each test
-        self.num_nodes = 10
-        self.edge_prob = 0.5
-        self.graph = generate_random_graph(self.num_nodes, self.edge_prob)
-        self.graph_wrapper = Graph()
-        for u, v in self.graph.edges():
-            self.graph_wrapper.add_edge(u, v)
-
-        # Prepare input data for C++ program
-        self.input_data = f"{self.num_nodes} {self.graph.number_of_edges()}\n"
-        for u, v in self.graph.edges():
-            self.input_data += f"{u + 1} {v + 1}\n" # Convert 0-based to 1-based indexing
+        self.graph_types = {
+            "erdos_renyi": nx.erdos_renyi_graph(10, 0.5),
+            "scale_free": nx.barabasi_albert_graph(10, 3),
+            "small_world": nx.watts_strogatz_graph(10, 4, 0.1),
+            "sparse": nx.gnm_random_graph(10, 15)
+        }
 
     def test_densest_subgraph(self):
-        # Calculate the densest subgraph using Python
-        python_nodes = self.graph_wrapper.densest_subgraph()
+        for graph_name, graph in self.graph_types.items():
+            with self.subTest(graph=graph_name):
+                graph_wrapper = Graph()
+                for u, v in graph.edges():
+                    graph_wrapper.add_edge(u, v)
 
-        # Run the C++ program and get the result
-        cpp_output = run_cpp_program(self.input_data, self.executable, self.cwd)
-        cpp_nodes = parse_cpp_output(cpp_output)
-        cpp_nodes = [node - 1 for node in cpp_nodes] # Convert 1-based to 0-based indexing
+                # Prepare input data for C++ program
+                input_data = f"{graph.number_of_nodes()} {graph.number_of_edges()}\n"
+                for u, v in graph.edges():
+                    input_data += f"{u + 1} {v + 1}\n" # Convert 0-based to 1-based indexing
 
-        # Compare the results
-        self.assertEqual(set(python_nodes), set(cpp_nodes))
+                # Calculate the densest subgraph using Python
+                python_nodes = graph_wrapper.densest_subgraph()
+
+                # Run the C++ program and get the result
+                cpp_output = run_cpp_program(input_data, self.executable, self.cwd)
+                cpp_nodes = parse_cpp_output(cpp_output)
+                cpp_nodes = [node - 1 for node in cpp_nodes] # Convert 1-based to 0-based indexing
+
+                # Compare the results
+                self.assertEqual(set(python_nodes), set(cpp_nodes))
 
 if __name__ == "__main__":
     unittest.main()
