@@ -103,7 +103,7 @@ class Graph:
 
         l, u = 0, m
         xtol = 1 / (n * (n - 1))
-        while u - l > xtol:
+        while u - l >= xtol:
             g = (u + l) / 2
             flow_graph = construct_flow_network(g)
             V1, _, _ = find_min_cut(flow_graph)
@@ -113,6 +113,7 @@ class Graph:
             else:
                 u = g
 
+        V1 = find_min_cut(construct_flow_network(l))[0]
         return [self.reverse_mapping[node] for node in V1]
 
     def approximate_densest_subgraph(self):
