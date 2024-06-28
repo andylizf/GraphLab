@@ -1,3 +1,4 @@
+import itertools
 import networkx as nx
 import plotly.graph_objects as go
 import re
@@ -66,7 +67,6 @@ class Graph:
             return 0
         return graph.number_of_edges() / graph.number_of_nodes()
 
-
     # region: algo
 
     # Algorithm 1: K-core decomposition
@@ -121,7 +121,9 @@ class Graph:
                 u = g
 
         V1 = find_min_cut(construct_flow_network(l))[0]
-        return [self.reverse_mapping[node] for node in V1]
+        return [self.reverse_mapping[node] for node in V1], Graph.density(
+            self.graph.subgraph(V1)
+        )
 
     def approximate_densest_subgraph(self):
         best_subgraph = (None, 0)
@@ -166,7 +168,9 @@ class Graph:
     def k_clique_decomposition(self, k):
         cliques = self.find_maximal_cliques()
         k_cliques = [clique for clique in cliques if len(clique) == k]
-        k_cliques = [[self.reverse_mapping[node] for node in clique] for clique in k_cliques]
+        k_cliques = [
+            [self.reverse_mapping[node] for node in clique] for clique in k_cliques
+        ]
         return k_cliques
 
     # Algorithm 4: NVCC
@@ -204,9 +208,11 @@ class Graph:
                 k_vccs.extend(Graph.kvcc_enum(subgraph, k))
         return k_vccs
 
-    def find_k_vcc(self, k):
+    def k_vcc(self, k):
         k_vccs = Graph.kvcc_enum(self.graph, k)
-        k_vccs = [[self.reverse_mapping[node] for node in k_vcc.nodes()] for k_vcc in k_vccs]
+        k_vccs = [
+            [self.reverse_mapping[node] for node in k_vcc.nodes()] for k_vcc in k_vccs
+        ]
         return k_vccs
 
     # endregion
@@ -215,6 +221,7 @@ class Graph:
         self,
         highlight_nodes=None,
         secondary_highlight_nodes=None,
+        highlight_cliques=None,
         node_color="lightblue",
         node_size=20,
         edge_color="gray",
@@ -302,6 +309,25 @@ class Graph:
                 textposition="top center" if with_labels else None,
             )
             fig.add_trace(secondary_highlight_trace)
+
+        # Define a list of colors for cliques
+        colors = itertools.cycle(
+            ["orange", "purple", "cyan", "magenta", "yellow", "green", "blue", "red"]
+        )
+        if highlight_cliques:
+            for clique in highlight_cliques:
+                color = next(colors)
+                clique_x, clique_y = zip(*[pos[node] for node in clique])
+                clique_trace = go.Scatter(
+                    x=clique_x,
+                    y=clique_y,
+                    mode="markers+text" if with_labels else "markers",
+                    marker=dict(size=node_size, color=color, line_width=2),
+                    text=clique if with_labels else None,
+                    hoverinfo="text" if with_labels else "none",
+                    textposition="top center" if with_labels else None,
+                )
+                fig.add_trace(clique_trace)
 
         # Show the plot in the browser
         fig.show()

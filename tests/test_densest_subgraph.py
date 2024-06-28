@@ -1,9 +1,9 @@
 import os
-import platform
 import unittest
 import subprocess
 from graphmaster.graph import Graph
 import networkx as nx
+
 
 def run_cpp_program(input_data, executable, cwd):
     result = subprocess.run(
@@ -12,13 +12,15 @@ def run_cpp_program(input_data, executable, cwd):
         text=True,
         capture_output=True,
         check=True,
-        cwd=cwd
+        cwd=cwd,
     )
     return result.stdout
 
+
 def parse_cpp_output(output):
-    lines = output.strip().split('\n')
+    lines = output.strip().split("\n")
     return list(map(int, lines))
+
 
 def calculate_density(graph):
     num_nodes = graph.number_of_nodes()
@@ -27,10 +29,13 @@ def calculate_density(graph):
         return num_edges / num_nodes
     return 0
 
+
 class TestDensestSubgraph(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cwd = os.path.join(os.path.dirname(__file__), "third-party", "densest_subgraph")
+        cls.cwd = os.path.join(
+            os.path.dirname(__file__), "third-party", "densest_subgraph"
+        )
         cls.executable = os.path.join(cls.cwd, "densest_subgraph")
 
         # Compile the C++ file using make
@@ -40,7 +45,7 @@ class TestDensestSubgraph(unittest.TestCase):
                 check=True,
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                cwd=cls.cwd
+                cwd=cls.cwd,
             )
         except subprocess.CalledProcessError as e:
             print("Compilation failed:")
@@ -56,7 +61,7 @@ class TestDensestSubgraph(unittest.TestCase):
                 check=True,
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                cwd=cls.cwd
+                cwd=cls.cwd,
             )
         except subprocess.CalledProcessError as e:
             print("Clean up failed:")
@@ -64,12 +69,12 @@ class TestDensestSubgraph(unittest.TestCase):
             raise
 
     def setUp(self):
-        # Graphs for testing densest subgraph should be small 
+        # Graphs for testing densest subgraph should be small
         self.graph_types = {
             "erdos_renyi": nx.erdos_renyi_graph(20, 0.5),
             "scale_free": nx.barabasi_albert_graph(20, 3),
             "small_world": nx.watts_strogatz_graph(20, 4, 0.1),
-            "sparse": nx.gnm_random_graph(20, 15)
+            "sparse": nx.gnm_random_graph(20, 15),
         }
 
     def test_densest_subgraph(self):
@@ -82,15 +87,19 @@ class TestDensestSubgraph(unittest.TestCase):
                 # Prepare input data for C++ program
                 input_data = f"{graph.number_of_nodes()} {graph.number_of_edges()}\n"
                 for u, v in graph.edges():
-                    input_data += f"{u + 1} {v + 1}\n" # Convert 0-based to 1-based indexing
+                    input_data += (
+                        f"{u + 1} {v + 1}\n"  # Convert 0-based to 1-based indexing
+                    )
 
                 # Calculate the densest subgraph using Python
-                python_nodes = graph_wrapper.densest_subgraph()
+                python_nodes, _ = graph_wrapper.densest_subgraph()
 
                 # Run the C++ program and get the result
                 cpp_output = run_cpp_program(input_data, self.executable, self.cwd)
                 cpp_nodes = parse_cpp_output(cpp_output)
-                cpp_nodes = [node - 1 for node in cpp_nodes] # Convert 1-based to 0-based indexing
+                cpp_nodes = [
+                    node - 1 for node in cpp_nodes
+                ]  # Convert 1-based to 0-based indexing
 
                 # Compare the results
                 self.assertEqual(set(python_nodes), set(cpp_nodes))
@@ -105,12 +114,16 @@ class TestDensestSubgraph(unittest.TestCase):
                 # Prepare input data for C++ program
                 input_data = f"{graph.number_of_nodes()} {graph.number_of_edges()}\n"
                 for u, v in graph.edges():
-                    input_data += f"{u + 1} {v + 1}\n" # Convert 0-based to 1-based indexing
+                    input_data += (
+                        f"{u + 1} {v + 1}\n"  # Convert 0-based to 1-based indexing
+                    )
 
                 # Run the C++ program and get the result
                 cpp_output = run_cpp_program(input_data, self.executable, self.cwd)
                 cpp_nodes = parse_cpp_output(cpp_output)
-                cpp_nodes = [node - 1 for node in cpp_nodes] # Convert 1-based to 0-based indexing
+                cpp_nodes = [
+                    node - 1 for node in cpp_nodes
+                ]  # Convert 1-based to 0-based indexing
 
                 # Convert C++ result to subgraph and calculate density
                 cpp_subgraph = graph.subgraph(cpp_nodes)
@@ -121,6 +134,7 @@ class TestDensestSubgraph(unittest.TestCase):
 
                 # Ensure the density of the approximate densest subgraph is at least half of the densest subgraph
                 self.assertGreaterEqual(approx_density, cpp_density / 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -5,20 +5,30 @@ from graphmaster.graph import Graph
 import networkx as nx
 from itertools import combinations
 
+
 def run_cpp_program(graph_file, k, executable, cwd, output_file):
     result = subprocess.run(
-        [os.path.join(cwd, executable), "-g", graph_file, "-k", str(k), "-o", output_file],
+        [
+            os.path.join(cwd, executable),
+            "-g",
+            graph_file,
+            "-k",
+            str(k),
+            "-o",
+            output_file,
+        ],
         capture_output=True,
         text=True,
         check=True,
-        cwd=cwd
+        cwd=cwd,
     )
     return result.stdout
 
+
 def parse_cpp_output(output_file):
-    with open(output_file, 'r') as f:
+    with open(output_file, "r") as f:
         lines = f.readlines()
-    
+
     kvccs = []
     current_kvcc = []
     for line in lines:
@@ -37,6 +47,7 @@ def parse_cpp_output(output_file):
         kvccs.append(current_kvcc)
     return kvccs
 
+
 class TestKVCC(unittest.TestCase):
 
     @classmethod
@@ -52,7 +63,7 @@ class TestKVCC(unittest.TestCase):
                 check=True,
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                cwd=cls.cwd
+                cwd=cls.cwd,
             )
         except subprocess.CalledProcessError as e:
             print("Compilation failed:")
@@ -69,7 +80,7 @@ class TestKVCC(unittest.TestCase):
                 check=True,
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                cwd=cls.cwd
+                cwd=cls.cwd,
             )
         except subprocess.CalledProcessError as e:
             print("Clean up failed:")
@@ -79,7 +90,6 @@ class TestKVCC(unittest.TestCase):
         if os.path.exists(cls.output_file):
             os.remove(cls.output_file)
 
-
     def setUp(self):
         self.num_nodes = 20  # Number of nodes in each test graph
         self.edge_prob = 0.05  # Probability of edge creation for Erdos-Renyi graph
@@ -88,9 +98,11 @@ class TestKVCC(unittest.TestCase):
             "erdos_renyi": nx.erdos_renyi_graph(self.num_nodes, self.edge_prob),
             "scale_free": nx.barabasi_albert_graph(self.num_nodes, 3),
             "small_world": nx.watts_strogatz_graph(self.num_nodes, 4, 0.1),
-            "sparse": nx.gnm_random_graph(self.num_nodes, 15)
+            "sparse": nx.gnm_random_graph(self.num_nodes, 15),
         }
-        self.graph_instances = {name: self.create_graph_instance(g) for name, g in self.graphs.items()}
+        self.graph_instances = {
+            name: self.create_graph_instance(g) for name, g in self.graphs.items()
+        }
 
     def create_graph_instance(self, nx_graph):
         g = Graph()
@@ -99,13 +111,13 @@ class TestKVCC(unittest.TestCase):
         return g
 
     def save_graph_to_file(self, graph, filename):
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             f.write(f"{graph.number_of_nodes()} {graph.number_of_edges()}\n")
             for u, v in graph.edges():
                 f.write(f"{u + 1} {v + 1}\n")  # Convert 0-based to 1-based indexing
 
     def verify_kvcc(self, k_vcc, k):
-        for subset in combinations(k_vcc.nodes, k-1):
+        for subset in combinations(k_vcc.nodes, k - 1):
             subgraph = k_vcc.copy()
             subgraph.remove_nodes_from(subset)
             if not nx.is_connected(subgraph):
@@ -137,7 +149,7 @@ class TestKVCC(unittest.TestCase):
                 graph_wrapper = self.create_graph_instance(graph)
 
                 # Calculate the k-VCC using Python implementation
-                python_kvccs = graph_wrapper.find_k_vcc(self.k)
+                python_kvccs = graph_wrapper.k_vcc(self.k)
 
                 # Verify Python k-VCC results
                 self.assertTrue(self.verify_kvcc_results(graph, python_kvccs, self.k))
@@ -147,9 +159,13 @@ class TestKVCC(unittest.TestCase):
                 self.save_graph_to_file(graph, graph_file)
 
                 # Run the C++ program and get the result
-                run_cpp_program(graph_file, self.k, self.executable, self.cwd, self.output_file)
+                run_cpp_program(
+                    graph_file, self.k, self.executable, self.cwd, self.output_file
+                )
                 cpp_kvccs = parse_cpp_output(self.output_file)
-                cpp_kvccs = [[node - 1 for node in kvcc] for kvcc in cpp_kvccs]  # Convert 1-based to 0-based indexing
+                cpp_kvccs = [
+                    [node - 1 for node in kvcc] for kvcc in cpp_kvccs
+                ]  # Convert 1-based to 0-based indexing
 
                 # Verify the Python results against the C++ results
                 for python_kvcc in python_kvccs:
@@ -157,6 +173,7 @@ class TestKVCC(unittest.TestCase):
 
                 # Clean up the graph file
                 os.remove(graph_file)
+
 
 if __name__ == "__main__":
     unittest.main()
