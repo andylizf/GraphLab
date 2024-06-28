@@ -18,7 +18,7 @@ def run_cpp_program(input_data, executable, cwd):
 
 def parse_cpp_output(output):
     lines = output.strip().split('\n')
-    return map(int, lines)
+    return list(map(int, lines))
 
 def calculate_density(graph):
     num_nodes = graph.number_of_nodes()
@@ -27,30 +27,21 @@ def calculate_density(graph):
         return num_edges / num_nodes
     return 0
 
-
 class TestDensestSubgraph(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Compile the C++ file
-        cls.cpp_file = "densest_subgraph.cpp"
-        cls.executable = "densest_subgraph"
+        cls.cwd = os.path.join(os.path.dirname(__file__), "third-party", "densest_subgraph")
+        cls.executable = os.path.join(cls.cwd, "densest_subgraph")
 
-        if platform.system() == "Windows":
-            cls.executable += ".exe"
-
-        cls.cwd = os.path.dirname(__file__)
-        compile_command = f"g++ -o {cls.executable} {cls.cpp_file}"
+        # Compile the C++ file using make
         try:
             result = subprocess.run(
-                compile_command,
-                shell=True,
+                ["make"],
                 check=True,
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 cwd=cls.cwd
             )
-            print(result.stdout.decode())
-            print(result.stderr.decode())
         except subprocess.CalledProcessError as e:
             print("Compilation failed:")
             print(e.stderr.decode())
@@ -58,10 +49,19 @@ class TestDensestSubgraph(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # Remove the executable file after tests
-        executable_path = os.path.join(cls.cwd, cls.executable)
-        if os.path.exists(executable_path):
-            os.remove(executable_path)
+        # Clean up the generated files after tests
+        try:
+            subprocess.run(
+                ["make", "clean"],
+                check=True,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                cwd=cls.cwd
+            )
+        except subprocess.CalledProcessError as e:
+            print("Clean up failed:")
+            print(e.stderr.decode())
+            raise
 
     def setUp(self):
         self.graph_types = {
