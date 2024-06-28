@@ -20,6 +20,14 @@ def parse_cpp_output(output):
     lines = output.strip().split('\n')
     return map(int, lines)
 
+def calculate_density(graph):
+    num_nodes = graph.number_of_nodes()
+    num_edges = graph.number_of_edges()
+    if num_nodes > 1:
+        return num_edges / num_nodes
+    return 0
+
+
 class TestDensestSubgraph(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -85,6 +93,33 @@ class TestDensestSubgraph(unittest.TestCase):
 
                 # Compare the results
                 self.assertEqual(set(python_nodes), set(cpp_nodes))
+
+    def test_approximate_densest_subgraph(self):
+        for graph_name, graph in self.graph_types.items():
+            with self.subTest(graph=graph_name):
+                graph_wrapper = Graph()
+                for u, v in graph.edges():
+                    graph_wrapper.add_edge(u, v)
+
+                # Prepare input data for C++ program
+                input_data = f"{graph.number_of_nodes()} {graph.number_of_edges()}\n"
+                for u, v in graph.edges():
+                    input_data += f"{u + 1} {v + 1}\n" # Convert 0-based to 1-based indexing
+
+                # Run the C++ program and get the result
+                cpp_output = run_cpp_program(input_data, self.executable, self.cwd)
+                cpp_nodes = parse_cpp_output(cpp_output)
+                cpp_nodes = [node - 1 for node in cpp_nodes] # Convert 1-based to 0-based indexing
+
+                # Convert C++ result to subgraph and calculate density
+                cpp_subgraph = graph.subgraph(cpp_nodes)
+                cpp_density = calculate_density(cpp_subgraph)
+
+                # Calculate the approximate densest subgraph using Python
+                _, approx_density = graph_wrapper.approximate_densest_subgraph()
+
+                # Ensure the density of the approximate densest subgraph is at least half of the densest subgraph
+                self.assertGreaterEqual(approx_density, cpp_density / 2)
 
 if __name__ == "__main__":
     unittest.main()
