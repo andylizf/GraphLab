@@ -169,38 +169,43 @@ class Graph:
         k_cliques = [[self.reverse_mapping[node] for node in clique] for clique in k_cliques]
         return k_cliques
 
-    # Algorithm 4: K-clique densest subgraph
-    def k_clique_densest_subgraph(self, k, iterations=1000):
-        # Step 1: Initialize node values
-        r = {node: 0 for node in self.graph.nodes}
+    # Algorithm 4: NVCC
+    @staticmethod
+    def global_cut(graph, k):
+        for u in graph.nodes():
+            for v in graph.nodes():
+                if u != v and nx.node_connectivity(graph, u, v) < k:
+                    cutset = nx.minimum_node_cut(graph, u, v)
+                    if len(cutset) < k:
+                        return cutset
+        return None
 
-        for _ in range(iterations):
-            # Step 2: Iterate over all nodes to set s
-            s = r.copy()
+    @staticmethod
+    def overlap_partition(graph, S):
+        subgraphs = []
+        graph.remove_nodes_from(S)
+        for component in nx.connected_components(graph):
+            component_with_S = set(component) | S
+            subgraph = graph.subgraph(component_with_S).copy()
+            subgraphs.append(subgraph)
+        return subgraphs
 
-            # Step 3: For each k-clique, update r
-            for clique in self._find_k_cliques(k):
-                min_node = min(clique, key=lambda node: s[node])
-                r[min_node] += 1
+    @staticmethod
+    def kvcc_enum(graph, k):
+        k_vccs = []
+        G_k_core = nx.k_core(graph, k)
+        for component in nx.connected_components(G_k_core):
+            cutset = Graph.global_cut(G_k_core.subgraph(component), k)
+            if not cutset:
+                k_vccs.append(G_k_core)
+                break
+            subgraphs = Graph.overlap_partition(G_k_core.subgraph(component), cutset)
+            for subgraph in subgraphs:
+                k_vccs.extend(Graph.kvcc_enum(subgraph, k))
+        return k_vccs
 
-        # Step 4: Normalize r by the number of iterations
-        for node in r:
-            node /= iterations
-
-        # Step 5: Extract the densest subgraph
-        densest_subgraph = self._extract_densest_subgraph(r, k)
-        return densest_subgraph
-
-    def _find_k_cliques(self, k):
-        # Use networkx to find all k-cliques
-        cliques = [clique for clique in nx.find_cliques(self.graph) if len(clique) == k]
-        return cliques
-
-    def _extract_densest_subgraph(self, r, k):
-        sorted_nodes = sorted(r, key=r.get, reverse=True)
-        subgraph_nodes = sorted_nodes[:k]
-        subgraph = self.graph.subgraph(subgraph_nodes)
-        return subgraph, Graph.density(subgraph)
+    def find_k_vcc(self, k):
+        return Graph.kvcc_enum(self.graph, k)
 
     # endregion
 
