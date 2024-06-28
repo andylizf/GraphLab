@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -std=c++17 -O3
+CFLAGS = -Wall -std=c++17 -O2
 COMMON_HEADER = common.hpp dinic.hpp kvcc.hpp
 
 all: local_cut global_cut kvcc_baseline kvcc_sweep

@@ -1,3 +1,6 @@
+#include "common.hpp"
+#include "cut.hpp"
+#include "third-party/argparse/argparse.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -5,12 +8,10 @@
 #include <queue>
 #include <unordered_map>
 #include <vector>
-#include "common.hpp"
-#include "cut.hpp"
-#include "third-party/argparse/argparse.hpp"
 using namespace std;
 
-vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false) {
+vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false)
+{
     static vector<vector<int>> result;
     if (!runnning) {
         result.clear();
@@ -20,11 +21,11 @@ vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false) {
     vector<Graph> kCore;
     vector<vector<int>> kvcc;
     int n = graph.n;
-    int graphCnt = 0;            // 子图数量
-    int nodeCnt = 0;             // 当前子图中节点数量
-    vector<int> color(n, -1);    // 在第几个子图中
-    vector<int> id(n, -1);       // 在子图中的编号
-    vector<bool> inKCore(n, 1);  // 是否在 k-core 中
+    int graphCnt = 0; // 子图数量
+    int nodeCnt = 0; // 当前子图中节点数量
+    vector<int> color(n, -1); // 在第几个子图中
+    vector<int> id(n, -1); // 在子图中的编号
+    vector<bool> inKCore(n, 1); // 是否在 k-core 中
     vector<int> degree(n, 0);
     for (int i = 0; i < n; i++) {
         degree[i] = graph.edges[i].size();
@@ -43,7 +44,7 @@ vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false) {
         for (auto& e : graph.edges[u]) {
             int v = e.to;
             degree[v]--;
-            if (degree[v] == k - 1) {  // 保证每个点只会在第一次小于 k 时被 push
+            if (degree[v] == k - 1) { // 保证每个点只会在第一次小于 k 时被 push
                 q.push(v);
             }
         }
@@ -88,9 +89,9 @@ vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false) {
     // 遍历每个连通分量 subGraph，考察是否是 kvcc
     for (auto& subGraph : kCore) {
         auto [cut, source, sink] = calGlobalCut(subGraph, k);
-        if (cut.empty()) {  // 是 kvcc
+        if (cut.empty()) { // 是 kvcc
             result.push_back(subGraph.id);
-        } else {  // 不是 kvcc，利用割点将子图继续分成多个连通分量 subSubGraph，每个分量重复调用 getKVCC
+        } else { // 不是 kvcc，利用割点将子图继续分成多个连通分量 subSubGraph，每个分量重复调用 getKVCC
             graphCnt = 0;
             color.assign(subGraph.n, -1);
             vector<int> rawNodeId;
@@ -105,16 +106,16 @@ vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false) {
                 rawNodeId.emplace_back(subGraph.id[u]);
                 for (auto& e : subGraph.edges[u]) {
                     int v = e.to;
-                    if (u < v && cutSet.find(v) != cutSet.end()) {  // 是割点
+                    if (u < v && cutSet.find(v) != cutSet.end()) { // 是割点
                         cutSubGraphEdges.emplace_back(u, v);
                     }
                 }
             }
 
             for (int i = 0; i < subGraph.n; i++) {
-                if (color[i] == -1 && cutSet.find(i) == cutSet.end()) {  // 从非割点开始 BFS
-                    nodeCnt = cut.size();                                // 从割点后开始编号，割点的编号总是 0 ~ cut.size()-1
-                    rawNodeId.resize(cut.size());                        // 割点部分的 id 不变
+                if (color[i] == -1 && cutSet.find(i) == cutSet.end()) { // 从非割点开始 BFS
+                    nodeCnt = cut.size(); // 从割点后开始编号，割点的编号总是 0 ~ cut.size()-1
+                    rawNodeId.resize(cut.size()); // 割点部分的 id 不变
                     vector<pair<int, int>> subGraphEdges;
                     q.push(i);
                     color[i] = graphCnt;
@@ -125,11 +126,11 @@ vector<vector<int>> getKVCC(Graph graph, int k, bool runnning = false) {
                         rawNodeId.emplace_back(subGraph.id[u]);
                         for (auto& e : subGraph.edges[u]) {
                             int v = e.to;
-                            if (color[v] == -1 && cutSet.find(v) == cutSet.end()) {  // 非割点才能继续 BFS
+                            if (color[v] == -1 && cutSet.find(v) == cutSet.end()) { // 非割点才能继续 BFS
                                 color[v] = graphCnt;
                                 q.push(v);
                             }
-                            if (u < v || cutSet.find(v) != cutSet.end()) {  // 能连通的所有点
+                            if (u < v || cutSet.find(v) != cutSet.end()) { // 能连通的所有点
                                 subGraphEdges.emplace_back(u, v);
                             }
                         }
@@ -158,7 +159,8 @@ argparse::ArgumentParser program("kvcc_baseline");
 Timer timer;
 fstream fout;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     timer.tic("program");
     ios::sync_with_stdio(false);
     program.add_argument("-g", "--graph").default_value(string("dblp"));
@@ -169,20 +171,19 @@ int main(int argc, char** argv) {
     timer.tic("input");
     int n, m, k;
     k = program.get<int>("--k");
-    string filename = program.get<string>("--graph");
-    string path = "../dataset/" + filename + ".txt";
+    string path = program.get<string>("--graph");
     fstream fin(path);
     fout.open(program.get<string>("--output"), ios::out);
     fin >> n >> m;
-    cout << "graph=" << filename << endl;
+    cout << "graph=" << path << endl;
     cout << "k=" << k << endl;
     cout << "n=" << n << endl;
     cout << "m=" << m << endl;
 
     Graph graph(n);
     vector<pair<int, int>> rawEdges;
-    vector<int> rawNodeId;           // hashId -> rawId
-    unordered_map<int, int> nodeId;  // rawId -> hashId
+    vector<int> rawNodeId; // hashId -> rawId
+    unordered_map<int, int> nodeId; // rawId -> hashId
 
     for (int i = 0; i < m; i++) {
         int u, v;
