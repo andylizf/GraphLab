@@ -60,6 +60,13 @@ class Graph:
             u_mapped, v_mapped = self.mapping[u], self.mapping[v]
             self.graph.remove_edge(u_mapped, v_mapped)
 
+    @staticmethod
+    def density(graph):
+        if graph.number_of_nodes() == 0:
+            return 0
+        return graph.number_of_edges() / graph.number_of_nodes()
+
+
     # region: algo
 
     # Algorithm 1: K-core decomposition
@@ -117,18 +124,13 @@ class Graph:
         return [self.reverse_mapping[node] for node in V1]
 
     def approximate_densest_subgraph(self):
-        def density(subgraph):
-            if subgraph.number_of_nodes() == 0:
-                return 0
-            return subgraph.number_of_edges() / subgraph.number_of_nodes()
-
         best_subgraph = (None, 0)
         current_subgraph = self.graph.copy()
 
         while current_subgraph.number_of_nodes() > 0:
             best_subgraph = max(
                 best_subgraph,
-                (current_subgraph.copy(), density(current_subgraph)),
+                (current_subgraph.copy(), Graph.density(current_subgraph)),
                 key=lambda x: x[1],
             )
 
@@ -162,9 +164,9 @@ class Graph:
         return cliques
 
     def k_clique_decomposition(self, k):
-
         cliques = self.find_maximal_cliques()
         k_cliques = [clique for clique in cliques if len(clique) == k]
+        k_cliques = [[self.reverse_mapping[node] for node in clique] for clique in k_cliques]
         return k_cliques
 
     # Algorithm 4: K-clique densest subgraph
@@ -198,7 +200,7 @@ class Graph:
         sorted_nodes = sorted(r, key=r.get, reverse=True)
         subgraph_nodes = sorted_nodes[:k]
         subgraph = self.graph.subgraph(subgraph_nodes)
-        return subgraph, nx.density(subgraph)
+        return subgraph, Graph.density(subgraph)
 
     # endregion
 
