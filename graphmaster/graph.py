@@ -205,7 +205,9 @@ class Graph:
         return k_vccs
 
     def find_k_vcc(self, k):
-        return Graph.kvcc_enum(self.graph, k)
+        k_vccs = Graph.kvcc_enum(self.graph, k)
+        k_vccs = [[self.reverse_mapping[node] for node in k_vcc.nodes()] for k_vcc in k_vccs]
+        return k_vccs
 
     # endregion
 
