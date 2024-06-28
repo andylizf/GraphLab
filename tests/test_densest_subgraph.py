@@ -64,11 +64,12 @@ class TestDensestSubgraph(unittest.TestCase):
             raise
 
     def setUp(self):
+        # Graphs for testing densest subgraph should be small 
         self.graph_types = {
-            "erdos_renyi": nx.erdos_renyi_graph(10, 0.5),
-            "scale_free": nx.barabasi_albert_graph(10, 3),
-            "small_world": nx.watts_strogatz_graph(10, 4, 0.1),
-            "sparse": nx.gnm_random_graph(10, 15)
+            "erdos_renyi": nx.erdos_renyi_graph(20, 0.5),
+            "scale_free": nx.barabasi_albert_graph(20, 3),
+            "small_world": nx.watts_strogatz_graph(20, 4, 0.1),
+            "sparse": nx.gnm_random_graph(20, 15)
         }
 
     def test_densest_subgraph(self):
