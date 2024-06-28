@@ -1,0 +1,8 @@
+Exact Densest Subgraph:
+0.0095s
+density: 1.2857142857142858
+0 1 2 3 4 5 6
+Approximate Densest Subgraph:
+0.0004s
+density: 1.2857142857142858
+0 1 2 3 4 5 6

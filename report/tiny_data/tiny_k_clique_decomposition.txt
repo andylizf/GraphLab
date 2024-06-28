@@ -1,0 +1,4 @@
+0.0001s
+3-clique Decomposition:
+2 4 5
+4 5 6
