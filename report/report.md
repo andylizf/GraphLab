@@ -1,8 +1,10 @@
-### 图挖掘算法的实现与验证 实验报告
+# 图挖掘算法的实现与验证 实验报告
 
 李知非 2022200862
 
-#### 目录
+> 本实验已在 [GitHub](https://github.com/andylizf/GraphLab) 上开源，欢迎查看。
+
+## 目录
 
 1. [实验目的](#1-实验目的)
 2. [实验内容](#2-实验内容)
@@ -18,11 +20,11 @@
     1. [测试用例：`test_kvcc.py`](#测试用例test_kvccpy)
 7. [总结与展望](#7-总结与展望)
 
-### 1. 实验目的
+## 1. 实验目的
 
 本实验旨在通过实现图的存储、读写、结构挖掘算法和可视化来加深对图算法的理解，并掌握如何在实际工程项目中应用这些算法。同时，通过将Python实现与C++实现进行对比，验证算法的正确性和效率。
 
-### 2. 实验内容
+## 2. 实验内容
 
 本实验内容包括以下几部分：
 
@@ -32,7 +34,7 @@
 4. 实现图的可视化，支持节点和边的样式设置以及交互功能。
 5. 通过详细的测试用例验证算法的正确性，并与C++实现进行对比。
 
-### 3. 项目结构
+## 3. 项目结构
 
 项目采用模块化设计，结构如下：
 
@@ -61,9 +63,9 @@ GraphLab/
         └── k_vcc/
 ```
 
-### 4. 算法实现
+## 4. 算法实现
 
-#### 图的读写
+### 图的读写
 
 图的读写是图操作的基础，通过对图的存储结构进行封装，可以方便地实现节点和边的添加、删除、读取和保存。
 
@@ -103,9 +105,7 @@ def save(self, output_path):
             f.write(f"{original_u} {original_v}\n")
 ```
 
-### 详细算法说明及伪代码
-
-#### 1. k-core分解
+### 1. k-core分解
 
 **算法说明**：
 k-core分解是一种用于识别网络中节点的稳健性和紧密性的算法。k-core是一个最大子图，在该子图中，每个节点至少连接有k个其他节点。k-core分解的过程是递归地移除度数小于k的节点，直到图中所有剩余节点的度数都大于等于k。
@@ -138,7 +138,7 @@ def k_core(self, k):
     return [self.reverse_mapping[node] for node in k_core_nodes]
 ```
 
-#### 2. 最密子图
+### 2. 最密子图
 
 **算法说明**：
 最密子图是图中具有最高边密度的子图。为了找到最密子图，可以使用最大流算法。通过构建流网络，并在网络上运行最小割算法来识别密度最大的子图。
@@ -230,7 +230,7 @@ def densest_subgraph(self):
     )
 ```
 
-#### 3. k-clique分解
+### 3. k-clique分解
 
 **算法说明**：
 k-clique分解用于在图中查找所有包含k个节点的完全子图。使用Bron-Kerbosch算法进行最大团的查找，然后过滤出包含k个节点的子图。
@@ -287,7 +287,7 @@ def k_clique_decomposition(self, k):
     return k_cliques
 ```
 
-#### 4. k-vcc分解
+### 4. k-vcc分解
 
 **算法说明**：
 k-vcc分解用于找到图中所有的k-顶点连通分量。k-顶点连通分量是指任意移除k-1个顶点后，图仍然保持连通。使用全局割和重叠分区的思想，通过递归方式找到所有k-vcc。
@@ -358,9 +358,7 @@ def kvcc_enum(graph, k):
     for component in nx.connected_components(G_k_core):
         cutset = Graph.global_cut(G_k_core.subgraph(component), k)
         if not cutset:
-            k
-
-_vccs.append(G_k_core)
+            k_vccs.append(G_k_core)
             break
         subgraphs = Graph.overlap_partition(G_k_core.subgraph(component), cutset)
         for subgraph in subgraphs:
@@ -522,7 +520,7 @@ def visualize(
     ```
     ![k-vcc](k_vcc_image.png)
 
-### 6. 测试与验证
+## 6. 测试与验证
 
 为了确保实现的算法正确性，我们通过详细的单元测试用例对其进行验证。四种算法均在不同类型的随机图上进行了测试，包括Erdos-Renyi图、尺度无关图、小世界图和稀疏图，然后与 NetworkX 库的实现、或第三方 C++ 实现进行对比。
 
@@ -532,7 +530,7 @@ def visualize(
 
 值得一提的是，我们还略加修改了 [panjd/KVCC](https://github.com/panjd123/KVCC) 的 C++ 实现（见 [tests/third-party/k_vcc](../tests/third-party/k_vcc)），作为我们的测试对照。经过测试，我们的 Python 实现能通过对 KVCC 的验证，且与 C++ 实现的结果一致，进一步证明了我们实现的正确性。
 
-#### 测试用例：`test_kvcc.py`
+### 测试用例：`test_kvcc.py`
 
 ```python
 import os
@@ -703,7 +701,7 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
-### 7. 总结与展望
+## 7. 总结与展望
 
 通过本次实验，我们成功实现了多个图挖掘算法，并通过详细的测试验证了它们的正确性。项目采用模块化设计，具备良好的扩展性和可维护性。在未来的工作中，我们可以进一步优化算法的性能，探索更多图挖掘算法，并将其应用于实际的图数据分析中。
 
